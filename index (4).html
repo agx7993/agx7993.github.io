@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>华中师范大学出国留学服务中心24届IG班校报</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #1a1a1a;
+            --sidebar-bg: #ffffff;
+            --control-bg: #e4e6eb;
+            --transition-duration: 0.3s;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #e4e6eb;
+            --sidebar-bg: #2d2d2d;
+            --control-bg: #3a3a3a;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: "Segoe UI", system-ui;
+            transition: background var(--transition-duration) ease;
+            touch-action: manipulation;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .pdf-container {
+            padding: 10px;
+            padding-top: 120px;
+            padding-bottom: 80px;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .pdf-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--control-bg);
+            display: flex;
+            gap: 5px;
+            padding: 10px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+            z-index: 100;
+            align-items: center;
+        }
+
+        .cloud-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--sidebar-bg);
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            z-index: 101;
+            transition: all var(--transition-duration) ease;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .toggle-btn {
+            transform: rotate(0deg);
+            transition: transform 0.3s ease;
+            font-size: 20px;
+            padding: 5px;
+        }
+
+        .toggle-btn.collapsed {
+            transform: rotate(180deg);
+        }
+
+        .file-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0;
+            max-height: 500px;
+            overflow-y: auto;
+            background: var(--sidebar-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .file-list.collapsed {
+            max-height: 0;
+            overflow: hidden;
+            margin: 0;
+            opacity: 0;
+        }
+
+        .file-item {
+            padding: 10px 12px;
+            margin: 4px 0;
+            background: rgba(0,0,0,0.03);
+            border-radius: 6px;
+            transition: background var(--transition-duration) ease;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 10px 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            padding: 0;
+            background: var(--control-bg);
+        }
+
+        .page-controls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-grow: 1;
+        }
+
+        .page-input {
+            width: 50px;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            text-align: center;
+            font-size: 14px;
+            background: var(--sidebar-bg);
+            color: var(--text-color);
+        }
+
+        @media (max-width: 768px) {
+            .pdf-container {
+                padding-top: 100px;
+            }
+            
+            .file-item {
+                padding: 8px 10px;
+                font-size: 13px;
+            }
+            
+            button {
+                font-size: 13px;
+                padding: 8px 10px;
+            }
+            
+            .page-input {
+                width: 40px;
+                padding: 6px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="cloud-header">
+            <div class="header-title" onclick="app.toggleMenu()">
+                <h3 style="margin:0; color: var(--text-color)">校刊</h3>
+                <span class="toggle-btn">▲</span>
+            </div>
+            <ul class="file-list" id="fileList"></ul>
+        </div>
+        <div class="main-content">
+            <div class="pdf-container">
+                <canvas id="pdfViewer" class="pdf-viewer"></canvas>
+            </div>
+            <div class="pdf-controls">
+                <div class="page-controls">
+                    <button onclick="app.prevPage()">上一页</button>
+                    <input type="number" class="page-input" id="pageInput" min="1" value="1" 
+                           onchange="app.jumpPage(this.value)">
+                    <span>/</span>
+                    <span id="totalPages">1</span>
+                    <button onclick="app.nextPage()">下一页</button>
+                </div>
+                <button class="theme-toggle" onclick="app.toggleTheme()" aria-label="切换主题">🌓</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script>
+        const app = {
+            currentPage: 1,
+            totalPages: 1,
+            pdfInstance: null,
+            resizeTimer: null,
+            isMenuCollapsed: false,
+            
+            cloudFiles: [
+                { 
+                    name: "test.pdf", 
+                    url: "https://agx7993.github.io/xk1.pdf" 
+                },
+                { 
+                    name: "第一刊.pdf", 
+                    url: "https://xiaokan.oss-cn-wuhan-lr.aliyuncs.com/xk1.pdf" 
+                }
+            ],
+
+            init() {
+                this.cacheDOM();
+                this.initFileList();
+                this.loadInitialPDF();
+                this.setupEventListeners();
+            },
+
+            cacheDOM() {
+                this.dom = {
+                    fileList: document.getElementById('fileList'),
+                    pdfContainer: document.querySelector('.pdf-container'),
+                    pdfCanvas: document.getElementById('pdfViewer'),
+                    pdfCtx: document.getElementById('pdfViewer').getContext('2d'),
+                    pageInput: document.getElementById('pageInput'),
+                    totalPagesSpan: document.getElementById('totalPages'),
+                    toggleBtn: document.querySelector('.toggle-btn')
+                };
+            },
+
+            initFileList() {
+                this.cloudFiles.forEach(file => {
+                    const li = document.createElement('li');
+                    li.className = 'file-item';
+                    li.textContent = file.name;
+                    li.addEventListener('click', () => this.loadPDF(file.url));
+                    this.dom.fileList.appendChild(li);
+                });
+            },
+
+            toggleMenu() {
+                this.isMenuCollapsed = !this.isMenuCollapsed;
+                this.dom.fileList.classList.toggle('collapsed');
+                this.dom.toggleBtn.classList.toggle('collapsed');
+                this.dom.pdfContainer.style.paddingTop = this.isMenuCollapsed ? '80px' : '120px';
+            },
+
+            async loadInitialPDF() {
+                try {
+                    await this.loadPDF(this.cloudFiles[0].url);
+                } catch (error) {
+                    console.error('PDF加载失败:', error);
+                }
+            },
+
+            async loadPDF(url) {
+                try {
+                    const loadingTask = pdfjsLib.getDocument(url);
+                    this.pdfInstance = await loadingTask.promise;
+                    this.totalPages = this.pdfInstance.numPages;
+                    this.currentPage = 1;
+                    this.dom.totalPagesSpan.textContent = this.totalPages;
+                    this.dom.pageInput.value = 1;
+                    this.renderPage();
+                    this.dom.pdfContainer.scrollTop = 0;
+                } catch (error) {
+                    console.error('PDF加载错误:', error);
+                    alert('文档加载失败，请检查网络连接');
+                }
+            },
+
+            async renderPage() {
+                if (!this.pdfInstance) return;
+
+                try {
+                    const page = await this.pdfInstance.getPage(this.currentPage);
+                    const viewport = page.getViewport({ scale: 1 });
+                    const containerWidth = this.dom.pdfContainer.clientWidth - 20;
+                    const scale = containerWidth / viewport.width;
+                    const scaledViewport = page.getViewport({ scale });
+
+                    this.dom.pdfCanvas.height = scaledViewport.height;
+                    this.dom.pdfCanvas.width = scaledViewport.width;
+
+                    await page.render({
+                        canvasContext: this.dom.pdfCtx,
+                        viewport: scaledViewport
+                    }).promise;
+                } catch (error) {
+                    console.error('页面渲染失败:', error);
+                }
+            },
+
+            prevPage() {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                    this.updatePageDisplay();
+                    this.renderPage();
+                }
+            },
+
+            nextPage() {
+                if (this.currentPage < this.totalPages) {
+                    this.currentPage++;
+                    this.updatePageDisplay();
+                    this.renderPage();
+                }
+            },
+
+            jumpPage(page) {
+                page = Math.max(1, Math.min(Number(page), this.totalPages));
+                if (page !== this.currentPage) {
+                    this.currentPage = page;
+                    this.updatePageDisplay();
+                    this.renderPage();
+                }
+            },
+
+            updatePageDisplay() {
+                this.dom.pageInput.value = this.currentPage;
+                this.dom.pdfContainer.scrollTop = 0;
+            },
+
+            toggleTheme() {
+                const currentTheme = document.body.getAttribute('data-theme');
+                document.body.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
+            },
+
+            setupEventListeners() {
+                window.addEventListener('resize', () => {
+                    clearTimeout(this.resizeTimer);
+                    this.resizeTimer = setTimeout(() => {
+                        if (this.pdfInstance) this.renderPage();
+                    }, 200);
+                });
+
+                this.dom.pdfContainer.addEventListener('scroll', (e) => {
+                    e.preventDefault();
+                    return false;
+                });
+            }
+        };
+
+        app.init();
+    </script>
+</body>
+</html>
